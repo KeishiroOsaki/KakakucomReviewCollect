@@ -48,7 +48,7 @@ public class KakakuReviewCollect {
 		listProcess = new JList<String>(listModel);
 		listProcess.setBounds(29, 94, 636, 334);
 		frame.getContentPane().add(listProcess);
-		//kakakucom.get();
+		kakakucom.start();
 	}
 
 	/**
@@ -90,7 +90,6 @@ public class KakakuReviewCollect {
 		frame.getContentPane().add(lblState);
 
 		bar = new JProgressBar();
-		bar.setIndeterminate(true);
 		bar.setBounds(29, 60, 636, 22);
 		frame.getContentPane().add(bar);
 
