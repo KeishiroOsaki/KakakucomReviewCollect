@@ -20,7 +20,7 @@ public class KakakuReviewCollect {
 	JProgressBar bar;
 	private JList<String> listProcess;
 	private DefaultListModel<String> listModel;
-	private USamazonCrawler usAmazon;
+	private KakakucomCrawler kakakucom;
 
 
 	/**
@@ -44,11 +44,11 @@ public class KakakuReviewCollect {
 	 */
 	public KakakuReviewCollect() {
 		initialize();
-		usAmazon = new USamazonCrawler(bar,lblState,listModel);
+		kakakucom = new KakakucomCrawler(bar,lblState,listModel);
 		listProcess = new JList<String>(listModel);
 		listProcess.setBounds(29, 94, 636, 334);
 		frame.getContentPane().add(listProcess);
-		usAmazon.start();
+		//kakakucom.get();
 	}
 
 	/**
@@ -68,7 +68,7 @@ public class KakakuReviewCollect {
 		btnStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
-				usAmazon.processStart();
+				kakakucom.processStart();
 
 			}
 		});
@@ -79,7 +79,7 @@ public class KakakuReviewCollect {
 		btnPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
-				usAmazon.processPause();
+				kakakucom.processPause();
 			}
 		});
 		btnPause.setBounds(158, 19, 117, 29);
@@ -90,6 +90,7 @@ public class KakakuReviewCollect {
 		frame.getContentPane().add(lblState);
 
 		bar = new JProgressBar();
+		bar.setIndeterminate(true);
 		bar.setBounds(29, 60, 636, 22);
 		frame.getContentPane().add(bar);
 
