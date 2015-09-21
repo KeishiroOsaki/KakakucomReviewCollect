@@ -49,6 +49,8 @@ public class KakakuReviewCollect {
 		listProcess.setBounds(29, 94, 636, 334);
 		frame.getContentPane().add(listProcess);
 		kakakucom.start();
+		System.out.println("ダイアログ初期化完了");
+		//kakakucom.processStart();
 	}
 
 	/**

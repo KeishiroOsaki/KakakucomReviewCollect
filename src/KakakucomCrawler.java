@@ -61,7 +61,15 @@ public class KakakucomCrawler extends Thread {
 	}
 
 	public void run() {
+		System.out.println("スレッドRun");
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO 自動生成された catch ブロック
+			e.printStackTrace();
+		}
 		getAllReview();
+		
 	}
 
 	public void getAllReview() {
@@ -73,48 +81,73 @@ public class KakakucomCrawler extends Thread {
 			i = 1;
 		}
 
-		for (; i <= Math.ceil(totalReviewCount / 15.0) && state == 1; i++) {
-
-			Elements elems;
-			try {
-				elems = Jsoup.connect("http://review.kakaku.com/review/newreview/PageNo=" + i + "/")
-						.userAgent("Mozilla 5.0").followRedirects(true).timeout(0).get()
-						.getElementsByClass("reviewBox");
-				bar.setMaximum(totalReviewCount);
-				for (Element elem : elems) {
-					Statement stmt = con.createStatement();
-
-					if (duplicateCheck("review_tbl", "WHERE reviewid = '" + getReviewId(elem) + "'") == 0) {
-						// 同じレビューがデータベースに無かった時の処理
-						bar.setValue(getSavedReviewCount()+1);
-						listModel.add(0,new Date().toString() + "価格ドットコムよりレビュー取得中 - id：" + getReviewId(elem));
-						String sql = "INSERT INTO review_tbl (entrydate,reviewid,rate,votes,customername,itemid) VALUES ('"
-								+ toUnivFormat(getEntryDate(elem)) + "','" + getReviewId(elem) + "'," + getRate(elem)
-								+ "," + getVotes(elem) + ",'" + getCusName(elem) + "','" + getItemid(elem) + "');";
-						int kekka = stmt.executeUpdate(sql);
-
-
-					}
-
-					if (duplicateCheck("item_tbl", "WHERE itemid = '" + getItemid(elem) + "'") == 0) {
-						// 新しい商品を見つけた時の処理
-						listModel.add(0,new Date().toString() + "価格ドットコムより商品情報取得中 - id：" + getItemid(elem));
-						String sql = "INSERT INTO item_tbl (itemid,itemjid,cat,maker,productname) VALUES ('"
-								+ getItemid(elem) + "','" + getItemjid(elem) + "','" + getCat(elem) + "','"
-								+ getMaker(elem) + "','" + getProductName(elem) + "');";
-						int kekka = stmt.executeUpdate(sql);
-					}
-
+		while (true) {
+			if (state == 0) {
+				try {
+					Thread.sleep(400);
+				} catch (InterruptedException e) {
+					// TODO 自動生成された catch ブロック
+					e.printStackTrace();
 				}
-			} catch (IOException e) {
-				// TODO 自動生成された catch ブロック
-				e.printStackTrace();
-			} catch (SQLException e) {
-				// TODO: handle exception
-				e.printStackTrace();
-			}
+			} else {
 
-			totalReviewCount = getTotalReviewCount();
+				for (; i <= Math.ceil(totalReviewCount / 15.0); i++) {
+
+					Elements elems;
+					try {
+						elems = Jsoup.connect("http://review.kakaku.com/review/newreview/PageNo=" + i + "/")
+								.userAgent("Mozilla 5.0").followRedirects(true).timeout(0).get()
+								.getElementsByClass("reviewBox");
+						bar.setMaximum(totalReviewCount);
+						for (Element elem : elems) {
+							Statement stmt = con.createStatement();
+							//System.out.println(elem.toString());						
+							
+							
+							Boolean pState = false;
+							do {
+								if (duplicateCheck("review_tbl", "WHERE reviewid = '" + getReviewId(elem) + "'") == 0) {
+									// 同じレビューがデータベースに無かった時の処理
+									bar.setValue(getSavedReviewCount() + 1);
+									listModel.add(0,
+											new Date().toString() + "価格ドットコムよりレビュー取得中 - id：" + getReviewId(elem));
+									System.out.println("reviewid：" + getReviewId(elem));
+									String sql = "INSERT INTO review_tbl (entrydate,reviewid,rate,votes,customername,itemid) VALUES ('"
+											+ toUnivFormat(getEntryDate(elem)) + "','" + getReviewId(elem) + "',"
+											+ getRate(elem) + "," + getVotes(elem) + ",'" + getCusName(elem) + "','"
+											+ getItemid(elem) + "');";
+									int kekka = stmt.executeUpdate(sql);
+									pState = true;
+								} else {
+									pState = true;
+								}
+							} while (pState == false);
+
+							if (duplicateCheck("item_tbl", "WHERE itemid = '" + getItemid(elem) + "'") == 0) {
+								// 新しい商品を見つけた時の処理
+								listModel.add(0, new Date().toString() + "価格ドットコムより商品情報取得中 - id：" + getItemid(elem));
+								System.out.println("itemid：" + getItemid(elem));
+								String sql = "INSERT INTO item_tbl (itemid,itemjid,cat,maker,productname) VALUES ('"
+										+ getItemid(elem) + "','" + getItemjid(elem) + "','" + getCat(elem) + "','"
+										+ getMaker(elem) + "','" + getProductName(elem) + "');";
+								int kekka = stmt.executeUpdate(sql);
+							} else {
+								pState = true;
+							}
+
+						}
+					} catch (IOException e) {
+						// TODO 自動生成された catch ブロック
+						e.printStackTrace();
+					} catch (SQLException e) {
+						// TODO: handle exception
+						e.printStackTrace();
+					}
+
+					if (state == 0) {break;}
+					totalReviewCount = getTotalReviewCount();
+				}
+			}
 		}
 	}
 
@@ -127,7 +160,8 @@ public class KakakucomCrawler extends Thread {
 		Pattern p = Pattern.compile(".*(?=\\[)");
 		Matcher m = p.matcher(entrydate);
 		m.find();
-		return m.group().trim() + ":00";
+		//System.out.println(m.group().trim());
+		return m.group().replaceAll(" ", " ").trim() + ":00";
 	}
 
 	private String getReviewId(Element elem) {
@@ -150,7 +184,7 @@ public class KakakucomCrawler extends Thread {
 
 	private String getCusName(Element elem) {
 		String cusName = elem.getElementsByClass("userName").first().getElementsByTag("a").first().text();
-		return cusName;
+		return cusName.replaceAll("'", "''");
 	}
 
 	private String getItemid(Element elem) {
@@ -161,6 +195,7 @@ public class KakakucomCrawler extends Thread {
 
 	private String getItemjid(Element elem) {
 		// http://kakaku.com/item/J0000015447/ を/で区切った4つ目を取り出す
+		try {
 		String jid = elem.getElementsByClass("prdctgry").first().getElementsByTag("a").get(2).attr("href")
 				.split("/")[4];
 
@@ -168,20 +203,28 @@ public class KakakucomCrawler extends Thread {
 		if (jid.charAt(0) == 'J') {
 			return jid;
 		} else {
-			return "";
+			//System.out.println("jidありません1");
+			return getItemid(elem);
+		} 
+		
+		} catch (IndexOutOfBoundsException e) {
+			//e.printStackTrace();
+			//System.out.println("jidありません2");
+			return getItemid(elem);
 		}
+		
 	}
 
 	private String getCat(Element elem) {
 
 		String cat = elem.getElementsByClass("prdctgry").first().text().split(">")[0].trim();
 
-		return cat;
+		return cat.replaceAll("'", "''");
 	}
 
 	private String getMaker(Element elem) {
-		String bc_of2= elem.getElementsByClass("prdctgry").first().text().split(">")[1];
-		return bc_of2.trim();
+		String bc_of2 = elem.getElementsByClass("prdctgry").first().text().split(">")[1];
+		return bc_of2.trim().replaceAll("'", "''");
 
 	}
 
@@ -191,10 +234,12 @@ public class KakakucomCrawler extends Thread {
 		String pname = "";
 		if (breadcrumb.length == 3) {
 			pname = breadcrumb[2].trim();
-		} else {
+		} else if (breadcrumb.length == 4) {
 			pname = breadcrumb[3].trim();
+		} else {
+			pname = breadcrumb[1].trim();
 		}
-		return pname;
+		return pname.replaceAll("'", "''");
 	}
 
 	public int getTotalReviewCount() {
@@ -246,7 +291,8 @@ public class KakakucomCrawler extends Thread {
 		} catch (SQLException e) {
 			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
-			return duplicateCheck(tblName, condition);
+			// return duplicateCheck(tblName, condition);
+			return 0;
 		}
 	}
 
