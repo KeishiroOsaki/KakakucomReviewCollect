@@ -75,11 +75,16 @@ public class KakakucomCrawler extends Thread {
 	public void getAllReview() {
 		int totalReviewCount = getTotalReviewCount();
 		int i;
-		if (getSavedReviewCount() > 0) {
-			i = (int) Math.ceil(getSavedReviewCount() / 15.0);
+		System.out.println("開始");
+	//	state=1;
+		int nowSavedReviewCount = getSavedReviewCount();
+		if (nowSavedReviewCount > 0) {
+			i = (int) Math.ceil(nowSavedReviewCount / 15.0);
 		} else {
 			i = 1;
 		}
+		bar.setStringPainted(true);
+		
 
 		while (true) {
 			if (state == 0) {
@@ -90,8 +95,10 @@ public class KakakucomCrawler extends Thread {
 					e.printStackTrace();
 				}
 			} else {
-
+				System.out.println("開始1");
 				for (; i <= Math.ceil(totalReviewCount / 15.0); i++) {
+					System.out.println(i + "ページ目");
+					listModel.add(0, i + "ページ目");
 
 					Elements elems;
 					try {
@@ -110,13 +117,14 @@ public class KakakucomCrawler extends Thread {
 									// 同じレビューがデータベースに無かった時の処理
 									bar.setValue(getSavedReviewCount() + 1);
 									listModel.add(0,
-											new Date().toString() + "価格ドットコムよりレビュー取得中 - id：" + getReviewId(elem));
+											new Date().toString() + " 価格ドットコムよりレビュー取得中 - id：" + getReviewId(elem));
 									System.out.println("reviewid：" + getReviewId(elem));
 									String sql = "INSERT INTO review_tbl (entrydate,reviewid,rate,votes,customername,itemid) VALUES ('"
 											+ toUnivFormat(getEntryDate(elem)) + "','" + getReviewId(elem) + "',"
 											+ getRate(elem) + "," + getVotes(elem) + ",'" + getCusName(elem) + "','"
 											+ getItemid(elem) + "');";
 									int kekka = stmt.executeUpdate(sql);
+									nowSavedReviewCount++;
 									pState = true;
 								} else {
 									pState = true;
@@ -125,7 +133,7 @@ public class KakakucomCrawler extends Thread {
 
 							if (duplicateCheck("item_tbl", "WHERE itemid = '" + getItemid(elem) + "'") == 0) {
 								// 新しい商品を見つけた時の処理
-								listModel.add(0, new Date().toString() + "価格ドットコムより商品情報取得中 - id：" + getItemid(elem));
+								listModel.add(0, new Date().toString() + " 価格ドットコムより商品情報取得中 - id：" + getItemid(elem));
 								System.out.println("itemid：" + getItemid(elem));
 								String sql = "INSERT INTO item_tbl (itemid,itemjid,cat,maker,productname) VALUES ('"
 										+ getItemid(elem) + "','" + getItemjid(elem) + "','" + getCat(elem) + "','"
@@ -134,7 +142,7 @@ public class KakakucomCrawler extends Thread {
 							} else {
 								pState = true;
 							}
-
+							bar.setString(nowSavedReviewCount + " / " + totalReviewCount);
 						}
 					} catch (IOException e) {
 						// TODO 自動生成された catch ブロック
@@ -143,9 +151,11 @@ public class KakakucomCrawler extends Thread {
 						// TODO: handle exception
 						e.printStackTrace();
 					}
-
+					
+					
 					if (state == 0) {break;}
 					totalReviewCount = getTotalReviewCount();
+					if (listModel.getSize()>100) { listModel.removeRange(25, listModel.getSize()-1); }
 				}
 			}
 		}
