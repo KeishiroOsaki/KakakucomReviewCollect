@@ -17,6 +17,12 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+/**
+ * 価格ドットコムの情報を収集するスレッドのサブクラス
+ * @author keishiro
+ *   
+ */
+
 public class KakakucomCrawler extends Thread {
 
 	private JProgressBar bar;
@@ -32,6 +38,12 @@ public class KakakucomCrawler extends Thread {
 	private String password;
 	private Connection con;
 
+	/**
+	 * コンストラクタ
+	 * @param GUI側の進捗状況を表すバー・ステータス表示用のラベル・ステータス表示用のリストボックス
+	 * @return なし
+	 * 
+	 */
 	public KakakucomCrawler(JProgressBar bar, JLabel lblState, DefaultListModel<String> listModel) {
 		// TODO 自動生成されたコンストラクター・スタブ
 		this.bar = bar;
@@ -45,7 +57,7 @@ public class KakakucomCrawler extends Thread {
 		dbname = "db_kakakucom";
 		url = "jdbc:postgresql://" + server + "/" + dbname;
 		user = "keishiro";
-		password = "wth050527";
+		password = "xx0omi";
 		try {
 			Class.forName(driver);
 		} catch (ClassNotFoundException e) {
@@ -84,7 +96,9 @@ public class KakakucomCrawler extends Thread {
 			i = 1;
 		}
 		bar.setStringPainted(true);
-		
+		bar.setMaximum(totalReviewCount);
+		bar.setValue(nowSavedReviewCount);
+		bar.setString(nowSavedReviewCount + " / " + totalReviewCount);
 
 		while (true) {
 			if (state == 0) {
@@ -96,7 +110,7 @@ public class KakakucomCrawler extends Thread {
 				}
 			} else {
 				System.out.println("開始1");
-				for (; i <= Math.ceil(totalReviewCount / 15.0); i++) {
+				for (i=46012; i <= Math.ceil(totalReviewCount / 15.0); i++) {
 					System.out.println(i + "ページ目");
 					listModel.add(0, i + "ページ目");
 
@@ -115,7 +129,7 @@ public class KakakucomCrawler extends Thread {
 							do {
 								if (duplicateCheck("review_tbl", "WHERE reviewid = '" + getReviewId(elem) + "'") == 0) {
 									// 同じレビューがデータベースに無かった時の処理
-									bar.setValue(getSavedReviewCount() + 1);
+									bar.setValue(nowSavedReviewCount + 1);
 									listModel.add(0,
 											new Date().toString() + " 価格ドットコムよりレビュー取得中 - id：" + getReviewId(elem));
 									System.out.println("reviewid：" + getReviewId(elem));
@@ -157,6 +171,7 @@ public class KakakucomCrawler extends Thread {
 					totalReviewCount = getTotalReviewCount();
 					if (listModel.getSize()>100) { listModel.removeRange(25, listModel.getSize()-1); }
 				}
+				if (state ==  1) { i = 1; }
 			}
 		}
 	}
